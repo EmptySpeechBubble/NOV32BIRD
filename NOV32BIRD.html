@@ -4662,6 +4662,39 @@ document.addEventListener('visibilitychange', function() {
                         flower.y *= scaleY;
                     }
                 });
+
+                // Update bushes - keep at ground level like trees
+                bushes.forEach(bush => {
+                    // Don't scale X - keep natural placement like trees
+                    // Only clamp to keep on screen if needed
+                    if (bush.x < 50) bush.x = 50;
+                    if (bush.x > canvas.width - 50) bush.x = canvas.width - 50;
+
+                    // Keep bushes at ground level with depth offset
+                    bush.y = newGroundLevel + (bush.depth < 0.3 ? 10 : 0);
+                });
+
+                // Update stones - keep at ground level, maintain position
+                stones.forEach(stone => {
+                    // Don't scale X - keep natural placement
+                    // Only clamp to keep on screen if needed
+                    if (stone.x < 20) stone.x = 20;
+                    if (stone.x > canvas.width - 20) stone.x = canvas.width - 20;
+
+                    // Keep stones at ground level
+                    stone.y = newGroundLevel;
+                });
+
+                // Update tall grass patches - keep at ground level, maintain position
+                tallGrassPatches.forEach(grass => {
+                    // Don't scale X - keep natural placement
+                    // Only clamp to keep on screen if needed
+                    if (grass.x < 50) grass.x = 50;
+                    if (grass.x > canvas.width - 50) grass.x = canvas.width - 50;
+
+                    // Keep grass at ground level
+                    grass.y = newGroundLevel;
+                });
 // Update ant hill if it exists
 if (antHill) {
     antHill.x *= scaleX; // Scale X position based on canvas width change
@@ -12564,8 +12597,8 @@ class TallGrass {
     }
 
     update(deltaTime, timeOfDay) {
-        // Gentle swaying animation
-        this.swayOffset += deltaTime * 0.001;
+        // Gentle swaying animation (slowed down significantly)
+        this.swayOffset += deltaTime * 0.0003; // Reduced from 0.001 for slower, more natural sway
     }
 
     draw() {
