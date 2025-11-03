@@ -4663,37 +4663,37 @@ document.addEventListener('visibilitychange', function() {
                     }
                 });
 
-                // Update bushes - keep at ground level like trees
+                // Update bushes - keep at ground level like trees with depth offset
                 bushes.forEach(bush => {
                     // Don't scale X - keep natural placement like trees
                     // Only clamp to keep on screen if needed
                     if (bush.x < 50) bush.x = 50;
                     if (bush.x > canvas.width - 50) bush.x = canvas.width - 50;
 
-                    // Keep bushes at ground level with depth offset
-                    bush.y = newGroundLevel + (bush.depth < 0.3 ? 10 : 0);
+                    // Keep bushes at ground level with stored depth offset
+                    bush.y = newGroundLevel + (bush.depthOffset || 0);
                 });
 
-                // Update stones - keep at ground level, maintain position
+                // Update stones - keep at ground level with depth offset
                 stones.forEach(stone => {
                     // Don't scale X - keep natural placement
                     // Only clamp to keep on screen if needed
                     if (stone.x < 20) stone.x = 20;
                     if (stone.x > canvas.width - 20) stone.x = canvas.width - 20;
 
-                    // Keep stones at ground level
-                    stone.y = newGroundLevel;
+                    // Keep stones at ground level with stored depth offset
+                    stone.y = newGroundLevel + (stone.depthOffset || 0);
                 });
 
-                // Update tall grass patches - keep at ground level, maintain position
+                // Update tall grass patches - keep at ground level with depth offset
                 tallGrassPatches.forEach(grass => {
                     // Don't scale X - keep natural placement
                     // Only clamp to keep on screen if needed
                     if (grass.x < 50) grass.x = 50;
                     if (grass.x > canvas.width - 50) grass.x = canvas.width - 50;
 
-                    // Keep grass at ground level
-                    grass.y = newGroundLevel;
+                    // Keep grass at ground level with stored depth offset
+                    grass.y = newGroundLevel + (grass.depthOffset || 0);
                 });
 // Update ant hill if it exists
 if (antHill) {
@@ -12457,13 +12457,17 @@ ctx.stroke();
 
 // NEW: Bush class for ground-level vegetation
 class Bush {
-    constructor(x) {
+    constructor(x, depth) {
         this.x = x;
-        this.y = canvas.height * GROUND_HEIGHT_RATIO; // Ground level
-        this.width = 40 + Math.random() * 30; // Varied bush widths
-        this.height = 30 + Math.random() * 20; // Varied heights
-        this.depth = Math.random(); // For layering
-        this.scale = 1 - this.depth * 0.2; // Slightly less depth variation than trees
+        this.depth = depth !== undefined ? depth : Math.random(); // For layering (0 = foreground, 1 = background)
+        this.scale = 1 - this.depth * 0.3; // Scale based on depth (0.7x to 1.0x)
+        this.width = (40 + Math.random() * 30) * this.scale; // Varied bush widths, scaled by depth
+        this.height = (30 + Math.random() * 20) * this.scale; // Varied heights, scaled by depth
+
+        // Depth offset: foreground bushes go deeper into grass area for depth perception
+        const depthOffset = this.depth < 0.3 ? (15 + Math.random() * 30) : (Math.random() * 15);
+        this.depthOffset = depthOffset;
+        this.y = canvas.height * GROUND_HEIGHT_RATIO + depthOffset;
 
         // Berry/seed production
         this.hasFruit = Math.random() < 0.6; // 60% of bushes have fruit
@@ -12504,10 +12508,8 @@ class Bush {
     draw() {
         ctx.save();
 
-        // Apply depth scaling
-        const scaledWidth = this.width * this.scale;
-        const scaledHeight = this.height * this.scale;
-        const drawY = this.y + (this.depth < 0.3 ? 10 : 0); // Foreground bushes slightly lower
+        // Width and height already scaled in constructor, Y already includes depth offset
+        const drawY = this.y;
 
         // Draw bush as rounded shape with multiple circles for leafy look
         ctx.fillStyle = this.color;
@@ -12515,13 +12517,13 @@ class Bush {
         // Main bush body (3-5 overlapping circles for natural look)
         const circleCount = 3 + Math.floor(this.leafDensity * 2);
         for (let i = 0; i < circleCount; i++) {
-            const offsetX = (i - circleCount / 2) * (scaledWidth / circleCount);
-            const offsetY = Math.sin(i) * (scaledHeight * 0.2);
+            const offsetX = (i - circleCount / 2) * (this.width / circleCount);
+            const offsetY = Math.sin(i) * (this.height * 0.2);
             ctx.beginPath();
             ctx.arc(
                 this.x + offsetX,
                 drawY + offsetY,
-                scaledWidth / (circleCount * 0.8),
+                this.width / (circleCount * 0.8),
                 0,
                 Math.PI * 2
             );
@@ -12535,8 +12537,8 @@ class Bush {
 
             for (let i = 0; i < this.fruitCount; i++) {
                 const angle = (i / this.fruitCount) * Math.PI * 2;
-                const fruitX = this.x + Math.cos(angle) * (scaledWidth * 0.3);
-                const fruitY = drawY + Math.sin(angle) * (scaledHeight * 0.3);
+                const fruitX = this.x + Math.cos(angle) * (this.width * 0.3);
+                const fruitY = drawY + Math.sin(angle) * (this.height * 0.3);
 
                 ctx.beginPath();
                 ctx.arc(fruitX, fruitY, 3 * this.scale, 0, Math.PI * 2);
@@ -12575,14 +12577,26 @@ class Bush {
 
 // NEW: TallGrass class for ground-level vegetation that attracts fireflies
 class TallGrass {
-    constructor(x, width) {
+    constructor(x, width, depth) {
         this.x = x;
-        this.width = width || (30 + Math.random() * 50); // 30-80px wide patches
-        this.y = canvas.height * GROUND_HEIGHT_RATIO; // Ground level
-        this.bladeCount = Math.floor(10 + Math.random() * 15); // 10-25 blades
-        this.height = 35 + Math.random() * 25; // 35-60px tall
+        this.depth = depth !== undefined ? depth : Math.random(); // For layering (0 = foreground, 1 = background)
+        this.scale = 1 - this.depth * 0.3; // Scale based on depth (0.7x to 1.0x)
+        this.width = (width || (30 + Math.random() * 50)) * this.scale; // 30-80px wide patches, scaled by depth
+        this.bladeCount = Math.floor((10 + Math.random() * 15) * this.scale); // 10-25 blades, scaled by depth
+        this.height = (35 + Math.random() * 25) * this.scale; // 35-60px tall, scaled by depth
         this.color = this.generateGrassColor();
         this.swayOffset = Math.random() * Math.PI * 2; // For animation
+
+        // Depth offset: foreground grass goes deeper into grass area for depth perception
+        const depthOffset = this.depth < 0.3 ? (10 + Math.random() * 20) : (Math.random() * 10);
+        this.depthOffset = depthOffset;
+        this.y = canvas.height * GROUND_HEIGHT_RATIO + depthOffset;
+
+        // Pre-calculate blade heights to prevent jittering
+        this.bladeHeights = [];
+        for (let i = 0; i < this.bladeCount; i++) {
+            this.bladeHeights[i] = this.height * (0.7 + Math.random() * 0.3);
+        }
     }
 
     generateGrassColor() {
@@ -12608,7 +12622,7 @@ class TallGrass {
         for (let i = 0; i < this.bladeCount; i++) {
             const bladeX = this.x - this.width / 2 + (i / this.bladeCount) * this.width;
             const sway = Math.sin(this.swayOffset + i * 0.5) * 3; // Gentle sway
-            const bladeHeight = this.height * (0.7 + Math.random() * 0.3); // Varied heights
+            const bladeHeight = this.bladeHeights[i]; // Use pre-calculated height to prevent jitter
 
             // Draw grass blade as a curved line
             ctx.strokeStyle = this.color;
@@ -12639,15 +12653,21 @@ class TallGrass {
 
 // NEW: Stone class for ground decoration
 class Stone {
-    constructor(x, y) {
+    constructor(x, y, depth) {
         this.x = x;
-        this.y = y || canvas.height * GROUND_HEIGHT_RATIO; // Ground level
-        this.size = 8 + Math.random() * 15; // 8-23px
+        this.depth = depth !== undefined ? depth : Math.random(); // For layering (0 = foreground, 1 = background)
+        this.scale = 1 - this.depth * 0.3; // Scale based on depth (0.7x to 1.0x)
+        this.size = (8 + Math.random() * 15) * this.scale; // 8-23px, scaled by depth
         this.color = this.generateStoneColor();
         this.shape = Math.random(); // For visual variety
         this.rotation = Math.random() * Math.PI * 2;
         // Pre-calculate ellipse ratio to prevent vibration
         this.ellipseRatio = 0.7 + Math.random() * 0.4;
+
+        // Depth offset: foreground stones go deeper into grass area for depth perception
+        const depthOffset = this.depth < 0.3 ? (5 + Math.random() * 15) : (Math.random() * 10);
+        this.depthOffset = depthOffset;
+        this.y = y || (canvas.height * GROUND_HEIGHT_RATIO + depthOffset);
     }
 
     generateStoneColor() {
@@ -20855,32 +20875,35 @@ function drawFullScene() {
                 }
             }
 
-            // Add initial bushes (similar spacing to trees but on ground)
-            const bushCount = 3 + Math.floor(Math.random() * 3); // 3-5 bushes
+            // Add initial bushes with depth variation (distributed across entire grass area depth)
+            const bushCount = 5 + Math.floor(Math.random() * 4); // 5-8 bushes for better coverage
             for (let i = 0; i < bushCount; i++) {
                 // Distribute bushes across the ground with some clustering
                 const xPos = 100 + (i * (canvas.width - 200) / bushCount) + (Math.random() - 0.5) * 150;
                 const clampedX = Math.max(80, Math.min(canvas.width - 80, xPos));
-                bushes.push(new Bush(clampedX));
-                debugLog(`Bush spawned at (${clampedX})`);
+                const depth = Math.random(); // Random depth for 3D layering effect
+                bushes.push(new Bush(clampedX, depth));
+                debugLog(`Bush spawned at (${clampedX}) with depth ${depth.toFixed(2)}`);
             }
 
-            // Add tall grass patches (2-4 scattered patches for fireflies)
-            const grassPatchCount = 2 + Math.floor(Math.random() * 3); // 2-4 patches
+            // Add tall grass patches with depth variation (distributed across entire grass area depth)
+            const grassPatchCount = 4 + Math.floor(Math.random() * 4); // 4-7 patches for better coverage
             for (let i = 0; i < grassPatchCount; i++) {
                 // Random positions across the ground, avoiding edges
                 const xPos = 150 + Math.random() * (canvas.width - 300);
-                const patchWidth = 40 + Math.random() * 60; // 40-100px wide
-                tallGrassPatches.push(new TallGrass(xPos, patchWidth));
-                debugLog(`Tall grass patch spawned at (${xPos}), width: ${patchWidth.toFixed(0)}px`);
+                const patchWidth = 40 + Math.random() * 60; // 40-100px wide (will be scaled by depth in constructor)
+                const depth = Math.random(); // Random depth for 3D layering effect
+                tallGrassPatches.push(new TallGrass(xPos, patchWidth, depth));
+                debugLog(`Tall grass patch spawned at (${xPos}), width: ${patchWidth.toFixed(0)}px, depth: ${depth.toFixed(2)}`);
             }
 
-            // Add decorative stones/rocks (4-8 scattered on ground)
-            const stoneCount = 4 + Math.floor(Math.random() * 5); // 4-8 stones
+            // Add decorative stones/rocks with depth variation (distributed across entire grass area depth)
+            const stoneCount = 6 + Math.floor(Math.random() * 6); // 6-11 stones for better coverage
             for (let i = 0; i < stoneCount; i++) {
                 const xPos = 100 + Math.random() * (canvas.width - 200);
-                const yPos = canvas.height * GROUND_HEIGHT_RATIO + 5 + Math.random() * 15; // Slightly into grass
-                stones.push(new Stone(xPos, yPos));
+                const depth = Math.random(); // Random depth for 3D layering effect
+                stones.push(new Stone(xPos, null, depth)); // Let constructor calculate Y with depth offset
+                debugLog(`Stone spawned at (${xPos}) with depth ${depth.toFixed(2)}`);
             }
             debugLog(`${stoneCount} decorative stones added to scene`);
 
