@@ -20544,49 +20544,80 @@ for (let i = owls.length - 1; i >= 0; i--) {
 
 // Add this new function for taking screenshots
 function takeScreenshot() {
+    console.log("Screenshot button clicked - function called");
+
     try {
+        console.log("Starting screenshot process...");
+
         // Temporarily hide the info panel for the screenshot
         const infoPanel = document.getElementById('infoPanel');
-        const wasVisible = infoPanel.style.display !== 'none';
+        const wasVisible = infoPanel && infoPanel.style.display !== 'none';
+        console.log("Info panel visible:", wasVisible);
+
         if (wasVisible) infoPanel.style.display = 'none';
-        
+
         // Hide debug visuals temporarily if they're showing
         const debugActive = debugVisuals;
-        if (debugActive) debugVisuals = false;
-        
+        if (debugActive) {
+            console.log("Temporarily disabling debug visuals");
+            debugVisuals = false;
+        }
+
         // Redraw the canvas without these elements
+        console.log("Drawing full scene for screenshot...");
         drawFullScene();
-        
+
+        console.log("Converting canvas to data URL...");
         // Convert canvas to data URL
         const dataUrl = canvas.toDataURL('image/png');
+        console.log("Data URL created, length:", dataUrl.length);
 
-        // FIX: Create a link element and properly append/remove from DOM for better browser compatibility
+        // Create a link element and trigger download
+        console.log("Creating download link...");
         const link = document.createElement('a');
-        link.download = `garden-view-${new Date().toISOString().slice(0,10)}.png`;
+        const filename = `garden-view-${new Date().toISOString().slice(0,10)}.png`;
+        link.download = filename;
         link.href = dataUrl;
         link.style.display = 'none';
-        document.body.appendChild(link); // Append to DOM first
+
+        console.log("Appending link and triggering download...");
+        document.body.appendChild(link);
         link.click();
-        document.body.removeChild(link); // Clean up
-        
+
+        // Use timeout to ensure download starts before cleanup
+        setTimeout(() => {
+            document.body.removeChild(link);
+            console.log("Link removed from DOM");
+        }, 100);
+
         // Show a message
         const message = document.getElementById('screenshotMessage');
         if (message) {
+            console.log("Showing screenshot message");
             message.style.display = 'block';
             setTimeout(() => {
                 message.style.display = 'none';
             }, 2000);
+        } else {
+            console.warn("Screenshot message element not found");
         }
-        
+
         // Restore the info panel if it was visible
-        if (wasVisible) infoPanel.style.display = 'block';
-        
+        if (wasVisible && infoPanel) {
+            infoPanel.style.display = 'block';
+        }
+
         // Restore debug visuals if they were active
-        if (debugActive) debugVisuals = true;
-        
+        if (debugActive) {
+            debugVisuals = true;
+        }
+
+        console.log("Screenshot process completed successfully");
         debugLog("Screenshot taken and saved");
     } catch (e) {
         console.error("Error taking screenshot:", e);
+        console.error("Error stack:", e.stack);
+        alert("Error taking screenshot: " + e.message);
     }
 }
 
@@ -21113,7 +21144,11 @@ function drawFullScene() {
     // Screenshot button handler
     const screenshotBtn = document.getElementById('screenshotBtn');
     if (screenshotBtn) {
+        console.log("Screenshot button found, adding click listener");
         screenshotBtn.addEventListener('click', takeScreenshot);
+        console.log("Screenshot click listener added successfully");
+    } else {
+        console.error("Screenshot button NOT found in DOM!");
     }
 
     // Instruction manual toggle
