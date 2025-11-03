@@ -1711,6 +1711,7 @@ let fpsFrames = [];
 let currentFPS = 60;
 let lowFPSWarningShown = false;
 let lastFPSWarningTime = 0;
+let lastTime = Date.now(); // Animation timing variable
 
 // === NEW BIRD BEHAVIOR SYSTEMS ===
 // Danger zone memory - shared across all birds
