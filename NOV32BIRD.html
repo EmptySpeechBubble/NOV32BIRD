@@ -12646,6 +12646,8 @@ class Stone {
         this.color = this.generateStoneColor();
         this.shape = Math.random(); // For visual variety
         this.rotation = Math.random() * Math.PI * 2;
+        // Pre-calculate ellipse ratio to prevent vibration
+        this.ellipseRatio = 0.7 + Math.random() * 0.4;
     }
 
     generateStoneColor() {
@@ -12674,8 +12676,8 @@ class Stone {
             // Round stone
             ctx.arc(0, 0, this.size, 0, Math.PI * 2);
         } else {
-            // Irregular stone (ellipse)
-            ctx.ellipse(0, 0, this.size, this.size * (0.7 + Math.random() * 0.4), 0, 0, Math.PI * 2);
+            // Irregular stone (ellipse) - use pre-calculated ratio to prevent vibration
+            ctx.ellipse(0, 0, this.size, this.size * this.ellipseRatio, 0, 0, Math.PI * 2);
         }
 
         ctx.fill();
@@ -20537,10 +20539,12 @@ function takeScreenshot() {
         
         // Show a message
         const message = document.getElementById('screenshotMessage');
-        message.style.display = 'block';
-        setTimeout(() => {
-            message.style.display = 'none';
-        }, 2000);
+        if (message) {
+            message.style.display = 'block';
+            setTimeout(() => {
+                message.style.display = 'none';
+            }, 2000);
+        }
         
         // Restore the info panel if it was visible
         if (wasVisible) infoPanel.style.display = 'block';
@@ -20586,6 +20590,22 @@ function drawFullScene() {
     const sortedTrees = [...trees].sort((a, b) => b.depth - a.depth);
     for (const tree of sortedTrees) {
         tree.draw();
+    }
+
+    // Draw bushes sorted by depth for proper layering
+    const sortedBushes = [...bushes].sort((a, b) => b.depth - a.depth);
+    for (const bush of sortedBushes) {
+        bush.draw();
+    }
+
+    // Draw tall grass patches
+    for (const grass of tallGrassPatches) {
+        grass.draw();
+    }
+
+    // Draw decorative stones
+    for (const stone of stones) {
+        stone.draw();
     }
 
     // Draw puddles
