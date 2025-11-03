@@ -19390,16 +19390,24 @@ function spawnOwls() {
             // Build the time string and draw each character individually
             const timeText = `${hourStr}:${minuteStr}`;
 
-            // Calculate precise character widths for centering
-            // Digits are ~160px wide, colon is ~80px wide
-            const digitWidth = 160;
-            const colonWidth = 80;
-            // Total: 2 digits + colon + 2 digits = 160+160+80+160+160 = 720
-            const totalWidth = (digitWidth * 4) + colonWidth;
+            // Calculate precise character widths for centering with extra spacing to prevent overlap
+            // Measure actual text width and add spacing
+            const singleDigitWidth = ctx.measureText('0').width;
+            const colonMeasuredWidth = ctx.measureText(':').width;
+
+            // Add generous spacing: use measured width + 50% extra for digit spacing
+            const digitWidth = singleDigitWidth * 1.5;
+            const colonWidth = colonMeasuredWidth * 1.5;
+
+            // Additional spacing between digit pairs
+            const extraSpacing = 40;
+
+            // Total: 2 digits + spacing + colon + spacing + 2 digits
+            const totalWidth = (digitWidth * 4) + colonWidth + (extraSpacing * 2);
 
             // Start position ensures the COLON is centered
             const colonCenterX = clockCenterX;
-            const startTextX = colonCenterX - (digitWidth * 2) - (colonWidth / 2);
+            const startTextX = colonCenterX - (digitWidth * 2) - (colonWidth / 2) - extraSpacing;
 
             // Check which birds are perched on clock numbers
             const birdsOnClock = [];
@@ -19425,19 +19433,23 @@ function spawnOwls() {
             // Draw each character with individual opacity based on bird presence
             for (let i = 0; i < timeText.length; i++) {
                 const char = timeText[i];
-                // Calculate X position based on character type (colon is narrower)
+                // Calculate X position based on character type with proper spacing
                 let charX;
                 if (i === 0) {
+                    // First hour digit
                     charX = startTextX + digitWidth;
                 } else if (i === 1) {
+                    // Second hour digit
                     charX = startTextX + digitWidth * 2;
                 } else if (i === 2) {
-                    // This is the colon - center it precisely
+                    // This is the colon - center it precisely with extra spacing
                     charX = colonCenterX;
                 } else if (i === 3) {
-                    charX = colonCenterX + colonWidth;
+                    // First minute digit (add extra spacing after colon)
+                    charX = colonCenterX + (colonWidth / 2) + extraSpacing + (digitWidth / 2);
                 } else {
-                    charX = colonCenterX + colonWidth + digitWidth;
+                    // Second minute digit
+                    charX = colonCenterX + (colonWidth / 2) + extraSpacing + digitWidth + (digitWidth / 2);
                 }
                 const charY = clockY;
 
