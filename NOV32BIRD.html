@@ -10562,7 +10562,7 @@ if ((isRaining || timeOfDay >= 1) && Math.random() < 0.4) { // 40% chance to see
                         }
                         break;
 
-                    case BIRD_STATES.BATHING:
+                    case BIRD_STATES.BATHING: {
                         // FIX: Check for both puddles AND ponds
                         if (puddles.length === 0 && ponds.length === 0) {
                             this.state = BIRD_STATES.FLYING;
@@ -10662,6 +10662,7 @@ if ((isRaining || timeOfDay >= 1) && Math.random() < 0.4) { // 40% chance to see
                             }
                         }
                         break;
+                    }
 
                     case BIRD_STATES.PREENING:
                         // Grooming feathers after bathing, eating, or while idle
@@ -10707,7 +10708,7 @@ if ((isRaining || timeOfDay >= 1) && Math.random() < 0.4) { // 40% chance to see
                         }
                         break;
 
-                    case BIRD_STATES.DRINKING:
+                    case BIRD_STATES.DRINKING: {
                         // Quick drinking behavior at water sources
                         this.velocity.x *= 0.85;
                         this.velocity.y *= 0.85;
@@ -10792,6 +10793,7 @@ if ((isRaining || timeOfDay >= 1) && Math.random() < 0.4) { // 40% chance to see
                             }
                         }
                         break;
+                    }
 
                     case BIRD_STATES.ALARM:
                         // Freeze response before fleeing - complete stillness
@@ -12028,7 +12030,7 @@ ctx.stroke();
                 }
 
                 switch (this.state) {
-                    case 'wandering':
+                    case 'wandering': {
                         this.wanderTimer += deltaTime;
                         this.exploreTimer += deltaTime;
 
@@ -12100,8 +12102,9 @@ ctx.stroke();
                             this.stateTimer = 0;
                         }
                         break;
+                    }
 
-                    case 'fleeing':
+                    case 'fleeing': {
                         // FIX: Add missing fleeing state case
                         // Move away from threat quickly
                         this.applyForce({
@@ -12120,6 +12123,7 @@ ctx.stroke();
                             debugLog(`Rat stopped fleeing and returned to wandering`);
                         }
                         break;
+                    }
 
                     case 'stopped':
                         // Leave after a longer while or if off-screen
